@@ -136,7 +136,7 @@ class AADCommand {
                     }
                     try {
                         permissions= <any[]>JSON.parse(this.runCommand(`az ad app permission list-grants --id ${app[0].appId}`, false))
-                        if (permissions.length >= 0) {
+                        if (permissions?.length >= 0) {
                             break
                         }
                     } catch {
