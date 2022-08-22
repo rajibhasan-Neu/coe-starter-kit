@@ -6,7 +6,6 @@ Home As screen:
             ReinitializeHome,
             UpdateContext(
                 {
-                    adminApp: LookUp('Model-driven Apps', 'Unique Name' = "cat_DeploymentProfiles"),
                     showLoader: true,
                     statusesLoading: true,
                     locStartCheckBuildStatusTimer: false,
@@ -20,10 +19,6 @@ Home As screen:
                     GetEnvironmentId.Run()
                 )
             );
-            Set( 
-                dsRegion,
-                ""
-            );
             Set(
                 gblUser,
                 User()
@@ -36,13 +31,13 @@ Home As screen:
                 )
             );
             ClearCollect(
-                        DeploymentUserSettings,
-                        AddColumns(
-                            'Deployment User Settings',
-                            "DisplayName",
-                            Name
-                        )
-                    );
+                DeploymentUserSettings,
+                AddColumns(
+                    'Deployment User Settings',
+                    "DisplayName",
+                    Name
+                )
+            );
             If(
                 CountRows(DeploymentUserSettings) = 0,
                 Patch(
@@ -424,8 +419,8 @@ Home As screen:
                 ClearCollect(
                     SelectedProjectRepos,
                     CustomAzureDevOps.GetGitRepos(
-                        locBranchesDeploymentProfile.Organization,
-                        locBranchesDeploymentProfile.Project
+                        locBranchesDeploymentProfile.'AzDO Organization',
+                        locBranchesDeploymentProfile.'AzDO Project'
                     ).value
                 );
                 Clear(SelectedRepoBranches);
@@ -441,8 +436,8 @@ Home As screen:
                         AddColumns(
                             Filter(
                                 CustomAzureDevOps.GetBranches(
-                                    locBranchesDeploymentProfile.Organization,
-                                    locBranchesDeploymentProfile.Project,
+                                    locBranchesDeploymentProfile.'AzDO Organization',
+                                    locBranchesDeploymentProfile.'AzDO Project',
                                     locBranchesDeploymentProfile.'Repository ID'
                                 ).value,
                                 "refs/heads/" in name
@@ -654,8 +649,8 @@ Home As screen:
                 ClearCollect(
                     SelectedProjectRepos,
                     CustomAzureDevOps.GetGitRepos(
-                        locBranchesDeploymentProfile.Organization,
-                        locBranchesDeploymentProfile.Project
+                        locBranchesDeploymentProfile.'AzDO Organization',
+                        locBranchesDeploymentProfile.'AzDO Project'
                     ).value
                 );
                 Clear(SelectedRepoBranches);
@@ -671,8 +666,8 @@ Home As screen:
                         AddColumns(
                             Filter(
                                 CustomAzureDevOps.GetBranches(
-                                    locBranchesDeploymentProfile.Organization,
-                                    locBranchesDeploymentProfile.Project,
+                                    locBranchesDeploymentProfile.'AzDO Organization',
+                                    locBranchesDeploymentProfile.'AzDO Project',
                                     locBranchesDeploymentProfile.'Repository ID'
                                 ).value,
                                 "refs/heads/" in name
@@ -1055,7 +1050,7 @@ Home As screen:
                         If(
                             !IsBlankOrError(prStatus.PullRequestStatus) And (IsBlankOrError(deployStatus.BuildStatus) Or prStatus.RequestedOn > deployStatus.RequestedOn),
                             Launch(
-                                "https://dev.azure.com/" & locPRProfile.Organization & "/" & locPRProfile.Project & "/_git/" & locPRProfile.Repository & "/pullrequest/" & LookUp(
+                                "https://dev.azure.com/" & locPRProfile.'AzDO Organization' & "/" & locPRProfile.'AzDO Project' & "/_git/" & locPRProfile.Repository & "/pullrequest/" & LookUp(
                                     SolutionsLatestBuildStatuses,
                                     uniquename = ThisItem.uniquename
                                 ).pullRequestStatus.PullRequestStatus.pullRequestId
@@ -1531,13 +1526,13 @@ Home As screen:
                         );
                         ClearCollect(
                             SelectedOrgProjects,
-                            CustomAzureDevOps.GetProjects(locSelectedDeploymentProfile.Organization).value
+                            CustomAzureDevOps.GetProjects(locSelectedDeploymentProfile.'AzDO Organization').value
                         );
                         ClearCollect(
                             SelectedProjectRepos,
                             CustomAzureDevOps.GetGitRepos(
-                                locSelectedDeploymentProfile.Organization,
-                                locSelectedDeploymentProfile.Project
+                                locSelectedDeploymentProfile.'AzDO Organization',
+                                locSelectedDeploymentProfile.'AzDO Project'
                             ).value
                         );
                         ClearCollect(
@@ -1545,8 +1540,8 @@ Home As screen:
                             AddColumns(
                                 Filter(
                                     CustomAzureDevOps.GetBranches(
-                                        locSelectedDeploymentProfile.Organization,
-                                        locSelectedDeploymentProfile.Project,
+                                        locSelectedDeploymentProfile.'AzDO Organization',
+                                        locSelectedDeploymentProfile.'AzDO Project',
                                         locSelectedDeploymentProfile.'Repository ID'
                                     ).value,
                                     "refs/heads/" in name
@@ -1572,7 +1567,6 @@ Home As screen:
                 Reset(drpProfileDeploymentProfiles);
                 Reset(drpProfileOrgs);
                 Reset(drpProfileProjects);
-                Reset(drpProfilePipelineProjects);
                 Reset(drpProfileRepositories);
                 Reset(drpProfileBranches);
                 UpdateContext(
@@ -2215,15 +2209,7 @@ Home As screen:
             HoverColor: =ColorFade(btnCommit.Color, 20%)
             HoverFill: =ColorFade(btnCommit.Fill, 20%)
             OnSelect: |-
-                =UpdateContext(
-                    {
-                        errorMessage: "",
-                        selectedConfigurationDeploymentProfile: LookUp(
-                            'Deployment Profiles',
-                            'Deployment Profile' = drpPushDeploymentProfiles.Selected.'Deployment Profile'
-                        )
-                    }
-                );
+                =UpdateContext({errorMessage: ""});
                 Set(
                     SelectedSolutionToConfigure,
                     glrSolutions.Selected
@@ -2239,6 +2225,10 @@ Home As screen:
                         false
                     );
                     Set(
+                        SelectedConfigurationDeploymentProfile,
+                        drpPushDeploymentProfiles.Selected
+                    );
+                    Set(
                         SelectedDeploymentStep,
                         Blank()
                     );
@@ -2252,20 +2242,15 @@ Home As screen:
                         {
                             selectedCommitProfile: LookUp(
                                 'Deployment Profiles',
-                                'Deployment Profile' = selectedConfigurationDeploymentProfile.'Deployment Profile'
-                            ),
-                            pipelineProject: If(
-                                IsBlankOrError(selectedConfigurationDeploymentProfile.'Pipeline Project'),
-                                selectedConfigurationDeploymentProfile.Project,
-                                selectedConfigurationDeploymentProfile.'Pipeline Project'
+                                'Deployment Profile' = drpPushDeploymentProfiles.Selected.'Deployment Profile'
                             )
                         }
                     );
                     ClearCollect(
                         locPipelines,
                         CustomAzureDevOps.GetPipelines(
-                            selectedConfigurationDeploymentProfile.Organization,
-                            pipelineProject
+                            drpPushDeploymentProfiles.Selected.'AzDO Organization',
+                            drpPushDeploymentProfiles.Selected.'AzDO Project'
                         ).value
                     );
                     //See if an export pipeline exists for the specific solution
@@ -2284,7 +2269,7 @@ Home As screen:
                             {
                                 piplineIdToRun: LookUp(
                                     locPipelines,
-                                    name = "export-solution-to-git-" & selectedConfigurationDeploymentProfile.Repository
+                                    name = "export-solution-to-git-" & drpPushDeploymentProfiles.Selected.Repository
                                 ).id
                             }
                         )
@@ -2305,7 +2290,7 @@ Home As screen:
                         DeploymentSteps,
                         Filter(
                             'Deployment Steps',
-                            'Deployment Profile'.'Deployment Profile' = selectedConfigurationDeploymentProfile.'Deployment Profile'
+                            'Deployment Profile'.'Deployment Profile' = drpPushDeploymentProfiles.Selected.'Deployment Profile'
                         )
                     );
                     ClearCollect(
@@ -2346,8 +2331,7 @@ Home As screen:
                                 DeploymentEnvironmentUrl: environment.'Deployment Environment'.URL,
                                 DeploymentEnvironmentName: environment.Name,
                                 ServiceConnectionName: environment.'Deployment Environment'.'Service Connection Name',
-                                BuildName: "deploy-" & Lower(environment.Name) & "-" & SelectedSolutionToConfigure.uniquename,
-                                BuildTemplate: environment.'Build Template Path'
+                                BuildName: "deploy-" & Lower(environment.Name) & "-" & SelectedSolutionToConfigure.uniquename
                             }
                         );
                     );
@@ -2356,13 +2340,13 @@ Home As screen:
                         {
                             promoteBuildId: IfError(
                                 CustomAzureDevOps.RunPipeline(
-                                    selectedCommitProfile.Organization,
-                                    pipelineProject,
+                                    selectedCommitProfile.'AzDO Organization',
+                                    selectedCommitProfile.'AzDO Project',
                                     piplineIdToRun,
                                     {
                                         definition: {id: piplineIdToRun},
                                         templateParameters: {
-                                            Project: selectedCommitProfile.Project,
+                                            Project: selectedCommitProfile.'AzDO Project',
                                             Repo: selectedCommitProfile.Repository,
                                             SolutionName: glrSolutions.Selected.uniquename,
                                             Email: gblUser.Email,
@@ -2397,7 +2381,7 @@ Home As screen:
                                 ShortDateTime
                             ) & " - " & glrSolutions.Selected.friendlyname,
                             'Solution Name': glrSolutions.Selected.uniquename,
-                            'Deployment Profile': selectedConfigurationDeploymentProfile,
+                            'Deployment Profile': drpPushDeploymentProfiles.Selected,
                             'Request Type': [@Type].Promote,
                             Target: If(
                                 locCreateNewBranch,
@@ -2788,54 +2772,34 @@ Home As screen:
             HoverColor: =ColorFade(btnImport.Color, 20%)
             HoverFill: =ColorFade(btnImport.Fill, 20%)
             OnSelect: |
-                =UpdateContext(
-                    {
-                        errorMessage: "",
-                        selectedConfigurationDeploymentProfile: LookUp(
-                            'Deployment Profiles',
-                            'Deployment Profile' = drpImportDeploymentProfiles.Selected.'Deployment Profile'
-                        )
-                    }
-                );
+                =UpdateContext({errorMessage: ""});
                 Set(
                     LastSavedImportPipelineRunsSettingName,
-                    "LastSavedImportPipelineRuns - " & selectedConfigurationDeploymentProfile.Organization & " - " & selectedConfigurationDeploymentProfile.Project
+                    "LastSavedImportPipelineRuns - " & drpImportDeploymentProfiles.Selected.'AzDO Organization' & " - " & drpImportDeploymentProfiles.Selected.'AzDO Project'
                 );
                 UpdateContext(
                     {
-                        pipelineProject: If(
-                            IsBlankOrError(selectedConfigurationDeploymentProfile.'Pipeline Project'),
-                            selectedConfigurationDeploymentProfile.Project,
-                            selectedConfigurationDeploymentProfile.'Pipeline Project'
-                        ),
                         piplineToRun: LookUp(
                             CustomAzureDevOps.GetPipelines(
-                                selectedConfigurationDeploymentProfile.Organization,
-                                pipelineProject
+                                drpImportDeploymentProfiles.Selected.'AzDO Organization',
+                                drpImportDeploymentProfiles.Selected.'AzDO Project'
                             ).value,
                             name = "import-unmanaged-to-dev-environment"
                         )
                     }
                 );
-                UpdateContext(
-                    {
-                        locImportProfile: LookUp(
-                            'Deployment Profiles',
-                            'Deployment Profile' = selectedConfigurationDeploymentProfile.'Deployment Profile'
-                        )
-                    }
-                );
+                UpdateContext({locImportProfile: LookUp('Deployment Profiles', 'Deployment Profile' = drpImportDeploymentProfiles.Selected.'Deployment Profile')});
                 UpdateContext(
                     {
                         importBuildId: IfError(
                             CustomAzureDevOps.RunPipeline(
-                                locImportProfile.Organization,
-                                pipelineProject,
+                                locImportProfile.'AzDO Organization',
+                                locImportProfile.'AzDO Project',
                                 piplineToRun.id,
                                 {
                                     definition: {id: piplineToRun.id},
                                     templateParameters: {
-                                        Project: locImportProfile.Project,
+                                        Project: locImportProfile.'AzDO Project',
                                         Repo: locImportProfile.Repository,
                                         SolutionName: drpSolutionFolders.Selected.DisplayName,
                                         Email: gblUser.Email,
@@ -2869,7 +2833,7 @@ Home As screen:
                             uniquename = drpSolutionFolders.Selected.DisplayName
                         ).friendlyname,
                         'Solution Name': drpSolutionFolders.Selected.DisplayName,
-                        'Deployment Profile': selectedConfigurationDeploymentProfile,
+                        'Deployment Profile': drpImportDeploymentProfiles.Selected,
                         'Build ID': If(
                             IsBlankOrError(errorMessage),
                             importBuildId,
@@ -3185,12 +3149,12 @@ Home As screen:
             OnChange: |
                 =UpdateContext({solutionChanged: true});
                 If(
-                    !IsBlankOrError(drpImportDeploymentProfiles.Selected) And !IsBlankOrError(drpImportDeploymentProfiles.Selected.Organization) And !IsBlankOrError(drpImportDeploymentProfiles.Selected.Project),
+                    !IsBlankOrError(drpImportDeploymentProfiles.Selected) And !IsBlankOrError(drpImportDeploymentProfiles.Selected.'AzDO Organization') And !IsBlankOrError(drpImportDeploymentProfiles.Selected.'AzDO Project'),
                     ClearCollect(
                         SelectedProjectRepos,
                         CustomAzureDevOps.GetGitRepos(
-                            drpImportDeploymentProfiles.Selected.Organization,
-                            drpImportDeploymentProfiles.Selected.Project
+                            drpImportDeploymentProfiles.Selected.'AzDO Organization',
+                            drpImportDeploymentProfiles.Selected.'AzDO Project'
                         ).value
                     );
                     If(
@@ -3205,8 +3169,8 @@ Home As screen:
                             AddColumns(
                                 Filter(
                                     CustomAzureDevOps.GetBranches(
-                                        drpImportDeploymentProfiles.Selected.Organization,
-                                        drpImportDeploymentProfiles.Selected.Project,
+                                        drpImportDeploymentProfiles.Selected.'AzDO Organization',
+                                        drpImportDeploymentProfiles.Selected.'AzDO Project',
                                         drpImportDeploymentProfiles.Selected.'Repository ID'
                                     ).value,
                                     "refs/heads/" in name
@@ -3291,7 +3255,6 @@ Home As screen:
             Height: =64
             Size: =16
             Text: =deploySolutionLabel
-            Tooltip: ="Select Bypass Approval to automatically complete the Pull Request created for this " & deploySolutionLabel & " request"
             Width: =546
             ZIndex: =2
 
@@ -3490,8 +3453,8 @@ Home As screen:
                             {
                                 pullRequestId: IfError(
                                     CustomAzureDevOps.CreatePullRequest(
-                                        drpPRDeploymentProfiles.Selected.Organization,
-                                        drpPRDeploymentProfiles.Selected.Project,
+                                        drpPRDeploymentProfiles.Selected.'AzDO Organization',
+                                        drpPRDeploymentProfiles.Selected.'AzDO Project',
                                         drpPRDeploymentProfiles.Selected.'Repository ID',
                                         {
                                             sourceRefName: locPRSourceBranch,
@@ -3512,42 +3475,6 @@ Home As screen:
                                     );
                                 )
                             }
-                        );
-                        Set(
-                            gblAzureDevOpsUserId,
-                            First(
-                                CustomAzureDevOps.GetIdentities(
-                                    drpPRDeploymentProfiles.Selected.Organization,
-                                    {
-                                        searchFilter: "MailAddress",
-                                        filterValue: gblUser.Email
-                                    }
-                                ).value
-                            ).id
-                        );
-                        If(
-                            tglCompletePR.Visible && tglCompletePR.Value,
-                            UpdateContext(
-                                {
-                                    pullRequestStatus: IfError(
-                                        CustomAzureDevOps.UpdatePullRequest(
-                                            drpPRDeploymentProfiles.Selected.Organization,
-                                            drpPRDeploymentProfiles.Selected.Project,
-                                            drpPRDeploymentProfiles.Selected.'Repository ID',
-                                            pullRequestId,
-                                            {
-                                                autoCompleteSetBy: {id: gblAzureDevOpsUserId},
-                                                completionOptions: {
-                                                    deleteSourceBranch: false,
-                                                    bypassPolicy: false
-                                                }
-                                            }
-                                        ),
-                                        UpdateContext({errorMessage: FirstError.Message});
-                                        Notify("Error completing pull request: " & errorMessage)
-                                    )
-                                }
-                            );
                         );
                         Patch(
                             'Deployment Requests',
@@ -3580,8 +3507,8 @@ Home As screen:
                         ClearCollect(
                             locPipelines,
                             CustomAzureDevOps.GetPipelines(
-                                drpPushDeploymentProfiles.Selected.Organization,
-                                drpPushDeploymentProfiles.Selected.Project
+                                drpPushDeploymentProfiles.Selected.'AzDO Organization',
+                                drpPushDeploymentProfiles.Selected.'AzDO Project'
                             ).value
                         );
                         UpdateContext(
@@ -3596,8 +3523,8 @@ Home As screen:
                             {
                                 buildId: IfError(
                                     CustomAzureDevOps.RunPipeline(
-                                        drpPRDeploymentProfiles.Selected.Organization,
-                                        drpPRDeploymentProfiles.Selected.Project,
+                                        drpPRDeploymentProfiles.Selected.'AzDO Organization',
+                                        drpPRDeploymentProfiles.Selected.'AzDO Project',
                                         piplineIdToRun,
                                         {definition: {id: piplineIdToRun}}
                                     ).id,
@@ -3892,36 +3819,6 @@ Home As screen:
             X: =330
             Y: =971
             ZIndex: =24
-
-        tglCompletePR As toggleSwitch:
-            AccessibleLabel: ="Bypass Approval"
-            Default: |-
-                =If(
-                    IsBlankOrError(DeploymentUserSetting) Or (IsBlankOrError(DeploymentUserSetting.'Bypass Approval Default') Or DeploymentUserSetting.'Bypass Approval Default' = 'A Yes or No boolean'.'Not Allowed'),
-                    false,
-                    true
-                )
-            FalseFill: =RGBA(237, 237, 237, 1)
-            FalseHoverFill: =ColorFade(tglCompletePR.FalseFill, 20%)
-            FalseText: ="Bypass Approval"
-            FontWeight: =FontWeight.Semibold
-            HandleFill: =If(tglCompletePR.Value, PrimaryColor1Value, PrimaryColor2Value)
-            HoverBorderColor: =ColorFade(tglCompletePR.BorderColor, 20%)
-            OnChange: =
-            PressedBorderColor: =ColorFade(tglCompletePR.BorderColor, -20%)
-            Tooltip: ="Select Bypass Approval to automatically complete the Pull Request created for this " & deploySolutionLabel & " request"
-            TrueHoverFill: =ColorFade(tglCompletePR.TrueFill, 20%)
-            TrueText: ="Bypass Approval"
-            Visible: |-
-                =If(
-                    tglPRAdvancedSettings.Value && (IsBlankOrError(DeploymentUserSetting) Or IsBlankOrError(DeploymentUserSetting.'Bypass Approval') Or DeploymentUserSetting.'Bypass Approval' = 'A Yes or No boolean'.Allowed),
-                    true,
-                    false
-                )
-            Width: =208
-            X: =31
-            Y: =665
-            ZIndex: =25
 
     grpImportSolution As group:
         Height: =5
@@ -4327,30 +4224,13 @@ Home As screen:
             HoverColor: =ColorFade(btnDelete.Color, 20%)
             HoverFill: =ColorFade(btnDelete.Fill, 20%)
             OnSelect: |
-                =UpdateContext(
-                    {
-                        errorMessage: "",
-                        selectedConfigurationDeploymentProfile: LookUp(
-                            'Deployment Profiles',
-                            'Deployment Profile' = drpDeleteDeploymentProfiles.Selected.'Deployment Profile'
-                        )
-                    }
-                );
-                UpdateContext(
-                    {
-                        pipelineProject: If(
-                            IsBlankOrError(selectedConfigurationDeploymentProfile.'Pipeline Project'),
-                            selectedConfigurationDeploymentProfile.Project,
-                            selectedConfigurationDeploymentProfile.'Pipeline Project'
-                        )
-                    }
-                );
+                =UpdateContext({errorMessage: ""});
                 UpdateContext(
                     {
                         piplineIdToRun: LookUp(
                             CustomAzureDevOps.GetPipelines(
-                                selectedConfigurationDeploymentProfile.Organization,
-                                pipelineProject
+                                drpDeleteDeploymentProfiles.Selected.'AzDO Organization',
+                                drpDeleteDeploymentProfiles.Selected.'AzDO Project'
                             ).value,
                             name = "delete-unmanaged-solution-and-components"
                         ).id
@@ -4361,14 +4241,14 @@ Home As screen:
                     {
                         deleteBuildId: IfError(
                             CustomAzureDevOps.RunPipeline(
-                                selectedConfigurationDeploymentProfile.Organization,
-                                pipelineProject,
+                                drpDeleteDeploymentProfiles.Selected.'AzDO Organization',
+                                drpDeleteDeploymentProfiles.Selected.'AzDO Project',
                                 piplineIdToRun,
                                 {
                                     definition: {id: piplineIdToRun},
                                     templateParameters: {
-                                        Project: selectedConfigurationDeploymentProfile.Project,
-                                        Repo: selectedConfigurationDeploymentProfile.Repository,
+                                        Project: drpDeleteDeploymentProfiles.Selected.'AzDO Project',
+                                        Repo: drpDeleteDeploymentProfiles.Selected.Repository,
                                         SolutionName: glrSolutions.Selected.uniquename,
                                         Email: gblUser.Email,
                                         UserName: gblUser.FullName,
@@ -4399,7 +4279,7 @@ Home As screen:
                             ShortDateTime
                         ) & " - " & glrSolutions.Selected.friendlyname,
                         'Solution Name': glrSolutions.Selected.uniquename,
-                        'Deployment Profile': selectedConfigurationDeploymentProfile,
+                        'Deployment Profile': drpDeleteDeploymentProfiles.Selected,
                         'Build ID': If(
                             IsBlankOrError(errorMessage),
                             deleteBuildId,
@@ -4412,7 +4292,7 @@ Home As screen:
                 Patch(
                     SelectedEnvironmentSolutions,
                     glrSolutions.Selected,
-                    {deploymentprofile: selectedConfigurationDeploymentProfile}
+                    {deploymentprofile: drpDeleteDeploymentProfiles.Selected}
                 );
                 Refresh('Deployment Requests');
                 Reset(txtSolutionName);
@@ -4625,7 +4505,7 @@ Home As screen:
             Height: =45
             PaddingLeft: =0
             PaddingTop: =0
-            Text: ="Solution Project"
+            Text: ="Project"
             VerticalAlign: =VerticalAlign.Bottom
             Width: =450
             X: =30
@@ -4634,14 +4514,14 @@ Home As screen:
 
         "glrDeploymentEnvironments As gallery.'BrowseLayout_Vertical_TwoTextOneImageVariant_ver4.0'":
             AccessibleLabel: ="Environments"
-            Height: =341
+            Height: =340
             Items: =Sort(Filter('Deployment Steps', 'Deployment Profile'.'Deployment Profile' = locSelectedDeploymentProfile.'Deployment Profile'), 'Step Number')
             Layout: =Layout.Vertical
             TemplatePadding: =0
-            TemplateSize: =98
+            TemplateSize: =110
             Width: =531
             X: =10
-            Y: =682
+            Y: =631
             ZIndex: =28
 
             Image6_1 As image:
@@ -4655,7 +4535,7 @@ Home As screen:
                 PressedFill: =ColorFade(Image6_1.Fill, -20%)
                 Width: =48
                 X: =6
-                Y: =7
+                Y: =16
                 ZIndex: =1
 
             lblDeploymentEnvironmentName As label:
@@ -4670,13 +4550,13 @@ Home As screen:
                 VerticalAlign: =VerticalAlign.Top
                 Width: =460
                 X: =57
-                Y: =7
+                Y: =16
                 ZIndex: =2
 
             Separator4_1 As rectangle:
                 BorderColor: =ColorFade(Separator4_1.Fill, -20%)
                 DisabledFill: =Separator4_1.Fill
-                Height: =0
+                Height: =1
                 HoverFill: =ColorFade(Separator4_1.Fill, 20%)
                 OnSelect: =Select(Parent)
                 PressedFill: =ColorFade(Separator4_1.Fill, -20%)
@@ -4728,9 +4608,9 @@ Home As screen:
                             true
                         )
                     )
-                Width: =440
+                Width: =455
                 X: =57
-                Y: =37
+                Y: =46
                 ZIndex: =8
 
             txtDeploymentEnvironmentUrl As text:
@@ -4781,7 +4661,7 @@ Home As screen:
             Text: ="Deployment Environments"
             Width: =548
             X: =2
-            Y: =651
+            Y: =591
             ZIndex: =31
 
         lblDeploymentProfileRepoLabel_1 As label:
@@ -4789,11 +4669,11 @@ Home As screen:
             Height: =45
             PaddingLeft: =0
             PaddingTop: =0
-            Text: ="Solution Repository"
+            Text: ="Repository"
             VerticalAlign: =VerticalAlign.Bottom
             Width: =450
             X: =30
-            Y: =445
+            Y: =365
             ZIndex: =32
 
         drpProfileDeploymentProfiles As dropdown:
@@ -4815,7 +4695,7 @@ Home As screen:
             OnChange: |
                 =UpdateContext(
                     {
-                        locOrgChanged: locSelectedDeploymentProfile.Organization <> drpProfileDeploymentProfiles.Selected.Organization,
+                        locOrgChanged: locSelectedDeploymentProfile.'AzDO Organization' <> drpProfileDeploymentProfiles.Selected.'AzDO Organization',
                         locSelectedDeploymentProfile: LookUp(
                             'Deployment Profiles',
                             'Deployment Profile' = drpProfileDeploymentProfiles.Selected.'Deployment Profile'
@@ -4844,14 +4724,14 @@ Home As screen:
                         locOrgChanged,
                         ClearCollect(
                             SelectedOrgProjects,
-                            CustomAzureDevOps.GetProjects(locSelectedDeploymentProfile.Organization).value
+                            CustomAzureDevOps.GetProjects(locSelectedDeploymentProfile.'AzDO Organization').value
                         )
                     );
                     ClearCollect(
                         SelectedProjectRepos,
                         CustomAzureDevOps.GetGitRepos(
-                            locSelectedDeploymentProfile.Organization,
-                            locSelectedDeploymentProfile.Project
+                            locSelectedDeploymentProfile.'AzDO Organization',
+                            locSelectedDeploymentProfile.'AzDO Project'
                         ).value
                     );
                     If(
@@ -4861,8 +4741,8 @@ Home As screen:
                             AddColumns(
                                 Filter(
                                     CustomAzureDevOps.GetBranches(
-                                        locSelectedDeploymentProfile.Organization,
-                                        locSelectedDeploymentProfile.Project,
+                                        locSelectedDeploymentProfile.'AzDO Organization',
+                                        locSelectedDeploymentProfile.'AzDO Project',
                                         locSelectedDeploymentProfile.'Repository ID'
                                     ).value,
                                     "refs/heads/" in name
@@ -4932,9 +4812,8 @@ Home As screen:
                         'Deployment Profiles',
                         {
                             Name: txtNewProfile.Text,
-                            Organization: drpProfileOrgs.Selected.AccountName,
-                            Project: drpProfileProjects.Selected.name,
-                            'Pipeline Project': drpProfilePipelineProjects.Selected.name,
+                            'AzDO Organization': drpProfileOrgs.Selected.AccountName,
+                            'AzDO Project': drpProfileProjects.Selected.name,
                             Repository: drpProfileRepositories.Selected.name,
                             'Repository ID': drpProfileRepositories.Selected.id,
                             'Promote Target Branch Name': drpProfileBranches.Selected.DisplayName
@@ -4980,7 +4859,6 @@ Home As screen:
                             Name: "Validation",
                             'Step Number': 1,
                             'Approval Type': 'Approval Type'.'Pull Request',
-                            'Build Template Path': "/Pipelines/build-deploy-validation-SampleSolution.yml",
                             'Deployment Profile': LookUp(
                                 'Deployment Profiles',
                                 Name = txtNewProfile.Text
@@ -4999,7 +4877,6 @@ Home As screen:
                             Name: "Test",
                             'Step Number': 2,
                             'Approval Type': 'Approval Type'.'Pull Request',
-                            'Build Template Path': "/Pipelines/build-deploy-test-SampleSolution.yml",
                             'Deployment Profile': LookUp(
                                 'Deployment Profiles',
                                 Name = txtNewProfile.Text
@@ -5032,7 +4909,6 @@ Home As screen:
                             Name: "Prod",
                             'Step Number': 3,
                             'Approval Type': 'Approval Type'.'Pull Request',
-                            'Build Template Path': "/Pipelines/build-deploy-prod-SampleSolution.yml",
                             'Deployment Profile': LookUp(
                                 'Deployment Profiles',
                                 Name = txtNewProfile.Text
@@ -5088,9 +4964,8 @@ Home As screen:
                                 )
                             ),
                             {
-                                Organization: drpProfileOrgs.Selected.AccountName,
-                                Project: drpProfileProjects.Selected.name,
-                                'Pipeline Project': drpProfilePipelineProjects.Selected.name,
+                                'AzDO Organization': drpProfileOrgs.Selected.AccountName,
+                                'AzDO Project': drpProfileProjects.Selected.name,
                                 Repository: drpProfileRepositories.Selected.name,
                                 'Repository ID': drpProfileRepositories.Selected.id,
                                 'Promote Target Branch Name': drpProfileBranches.Selected.DisplayName
@@ -5123,10 +4998,7 @@ Home As screen:
                                 Patch(
                                     'Deployment Steps',
                                     step,
-                                    {
-                                        cat_deploytargetbranchname: drpProfileBranches.Selected.name,
-                                        cat_buildtemplatepath: ""
-                                    }
+                                    {cat_deploytargetbranchname: drpProfileBranches.Selected.name}
                                 )
                             );
                         );
@@ -5246,8 +5118,8 @@ Home As screen:
                         {
                             locSelectedDeploymentProfile: {
                                 Name: "",
-                                Organization: First(Orgs.AccountName).AccountName,
-                                Project: First(SelectedOrgProjects).name,
+                                'AzDO Organization': First(Orgs.AccountName).AccountName,
+                                'AzDO Project': First(SelectedOrgProjects).name,
                                 Repository: First(SelectedProjectRepos).name,
                                 'Repository ID': First(SelectedProjectRepos).id,
                                 'Promote Target Branch': UseSolutionBranchText
@@ -5273,18 +5145,18 @@ Home As screen:
                             )
                         );
                         If(
-                            !IsBlankOrError(locPreviouslySelectedDeploymentProfile.Organization),
+                            !IsBlankOrError(locPreviouslySelectedDeploymentProfile.'AzDO Organization'),
                             ClearCollect(
                                 SelectedOrgProjects,
-                                CustomAzureDevOps.GetProjects(locPreviouslySelectedDeploymentProfile.Organization).value
+                                CustomAzureDevOps.GetProjects(locPreviouslySelectedDeploymentProfile.'AzDO Organization').value
                             );
                             If(
-                                !IsBlankOrError(locPreviouslySelectedDeploymentProfile.Project),
+                                !IsBlankOrError(locPreviouslySelectedDeploymentProfile.'AzDO Project'),
                                 ClearCollect(
                                     SelectedProjectRepos,
                                     CustomAzureDevOps.GetGitRepos(
-                                        locPreviouslySelectedDeploymentProfile.Organization,
-                                        locPreviouslySelectedDeploymentProfile.Project
+                                        locPreviouslySelectedDeploymentProfile.'AzDO Organization',
+                                        locPreviouslySelectedDeploymentProfile.'AzDO Project'
                                     ).value
                                 )
                             );
@@ -5295,8 +5167,8 @@ Home As screen:
                                     AddColumns(
                                         Filter(
                                             CustomAzureDevOps.GetBranches(
-                                                locPreviouslySelectedDeploymentProfile.Organization,
-                                                locPreviouslySelectedDeploymentProfile.Project,
+                                                locPreviouslySelectedDeploymentProfile.'AzDO Organization',
+                                                locPreviouslySelectedDeploymentProfile.'AzDO Project',
                                                 locPreviouslySelectedDeploymentProfile.'Repository ID'
                                             ).value,
                                             "refs/heads/" in name
@@ -5380,7 +5252,7 @@ Home As screen:
             AccessibleLabel: ="Publish Profile"
             ChevronHoverBackground: =ColorFade(drpProfileOrgs.ChevronBackground, 20%)
             ChevronHoverFill: =ColorFade(drpProfileOrgs.ChevronFill, 20%)
-            Default: =locSelectedDeploymentProfile.Organization
+            Default: =locSelectedDeploymentProfile.'AzDO Organization'
             DisplayMode: |-
                 =If(
                     IsBlankOrError(DeploymentUserSetting) Or IsBlankOrError(DeploymentUserSetting.'Profile Updates') Or DeploymentUserSetting.'Profile Updates' = 'A Yes or No boolean'.Allowed,
@@ -5447,7 +5319,7 @@ Home As screen:
             AccessibleLabel: ="Publish Profile"
             ChevronHoverBackground: =ColorFade(drpProfileProjects.ChevronBackground, 20%)
             ChevronHoverFill: =ColorFade(drpProfileProjects.ChevronFill, 20%)
-            Default: =locSelectedDeploymentProfile.Project
+            Default: =locSelectedDeploymentProfile.'AzDO Project'
             DisplayMode: |-
                 =If(
                     IsBlankOrError(DeploymentUserSetting) Or IsBlankOrError(DeploymentUserSetting.'Profile Updates') Or DeploymentUserSetting.'Profile Updates' = 'A Yes or No boolean'.Allowed,
@@ -5558,11 +5430,11 @@ Home As screen:
             Visible: =locAddNewProfile Or locUpdateProfile
             Width: =496
             X: =30
-            Y: =490
+            Y: =410
             ZIndex: =41
 
         txtDeploymentProfileOrg As text:
-            Default: =LookUp('Deployment Profiles', 'Deployment Profile' = locSelectedDeploymentProfile.'Deployment Profile').Organization
+            Default: =LookUp('Deployment Profiles', 'Deployment Profile' = locSelectedDeploymentProfile.'Deployment Profile').'AzDO Organization'
             DisplayMode: =DisplayMode.Disabled
             Height: =45
             HintText: ="No Profile Selected"
@@ -5579,7 +5451,7 @@ Home As screen:
             ZIndex: =42
 
         txtDeploymentProfileProject As text:
-            Default: =LookUp('Deployment Profiles', 'Deployment Profile' = locSelectedDeploymentProfile.'Deployment Profile').Project
+            Default: =LookUp('Deployment Profiles', 'Deployment Profile' = locSelectedDeploymentProfile.'Deployment Profile').'AzDO Project'
             DisplayMode: =DisplayMode.Disabled
             Height: =45
             HintText: ="No Profile Selected"
@@ -5617,11 +5489,11 @@ Home As screen:
             Height: =45
             PaddingLeft: =0
             PaddingTop: =0
-            Text: ="Solution Target Branch"
+            Text: ="Target Branch"
             VerticalAlign: =VerticalAlign.Bottom
             Width: =450
             X: =30
-            Y: =538
+            Y: =458
             ZIndex: =45
 
         txtDeploymentProfileBranch As text:
@@ -5660,7 +5532,7 @@ Home As screen:
             Visible: =locAddNewProfile Or locUpdateProfile
             Width: =496
             X: =30
-            Y: =583
+            Y: =503
             ZIndex: =47
 
         icoDeploymentEnvironmentUrlEdit As icon.Cancel:
@@ -5692,71 +5564,8 @@ Home As screen:
             Tooltip: =If(!locEditDeploymentEnvironmentUrl, "Enter Deployment Environment URLs", "Pick Deployment Environment")
             Width: =55
             X: =468
-            Y: =642
+            Y: =582
             ZIndex: =48
-
-        icoProfileOpenInAdmin As icon.Cancel:
-            AccessibleLabel: ="Close"
-            BorderColor: =ColorFade(icoProfileOpenInAdmin.Fill, -20%)
-            DisabledFill: =ColorFade(icoProfileOpenInAdmin.Fill, -80%)
-            Height: =55
-            HoverBorderColor: =ColorFade(icoProfileOpenInAdmin.BorderColor, 20%)
-            HoverColor: =ColorFade(icoProfileOpenInAdmin.Color, 20%)
-            HoverFill: =ColorFade(icoProfileOpenInAdmin.Fill, 20%)
-            Icon: =Icon.OpenInNewWindow
-            OnSelect: =Launch(LookUp(AllEnvironments, name = ExecutingEnvironment.tags.environmentName).properties.linkedEnvironmentMetadata.instanceUrl & "main.aspx?appid=" & adminApp.AppModuleId & "&pagetype=entityrecord&etn=cat_deploymentprofile&id=" & drpProfileDeploymentProfiles.Selected.'Deployment Profile')
-            PaddingBottom: =10
-            PaddingLeft: =10
-            PaddingRight: =10
-            PaddingTop: =10
-            PressedBorderColor: =ColorFade(icoProfileOpenInAdmin.BorderColor, -20%)
-            PressedColor: =ColorFade(icoProfileOpenInAdmin.Color, -20%)
-            PressedFill: =ColorFade(icoProfileOpenInAdmin.Fill, -20%)
-            Tooltip: ="Select to open this profile in the Administration App"
-            Visible: =!IsBlankOrError(adminApp)
-            Width: =55
-            X: =437
-            Y: =8
-            ZIndex: =49
-
-        lblDeploymentProfilePipelineProject As label:
-            FontWeight: =FontWeight.Semibold
-            Height: =45
-            PaddingLeft: =0
-            PaddingTop: =0
-            Text: ="Pipeline Project"
-            VerticalAlign: =VerticalAlign.Bottom
-            Width: =450
-            X: =30
-            Y: =360
-            ZIndex: =50
-
-        drpProfilePipelineProjects As dropdown:
-            AccessibleLabel: ="Publish Profile"
-            ChevronHoverBackground: =ColorFade(drpProfilePipelineProjects.ChevronBackground, 20%)
-            ChevronHoverFill: =ColorFade(drpProfilePipelineProjects.ChevronFill, 20%)
-            Default: =locSelectedDeploymentProfile.'Pipeline Project'
-            DisplayMode: |-
-                =If(
-                    IsBlankOrError(DeploymentUserSetting) Or IsBlankOrError(DeploymentUserSetting.'Profile Updates') Or DeploymentUserSetting.'Profile Updates' = 'A Yes or No boolean'.Allowed,
-                    DisplayMode.Edit,
-                    DisplayMode.Disabled
-                )
-            Height: =45
-            HoverBorderColor: =ColorFade(drpProfilePipelineProjects.BorderColor, 20%)
-            HoverColor: =ColorFade(drpProfilePipelineProjects.Color, 20%)
-            HoverFill: =ColorFade(drpProfilePipelineProjects.SelectionFill, 20%)
-            Items: =SortByColumns(SelectedOrgProjects, "name", Ascending)
-            OnChange: =
-            PressedBorderColor: =drpProfilePipelineProjects.HoverBorderColor
-            PressedColor: =drpProfilePipelineProjects.Fill
-            PressedFill: =drpProfilePipelineProjects.Color
-            Tooltip: ="The project where the pipelines are deployed and configured"
-            Visible: =locAddNewProfile Or locUpdateProfile
-            Width: =496
-            X: =30
-            Y: =403
-            ZIndex: =51
 
     btnFunctions As groupContainer:
         Height: =320
@@ -5777,12 +5586,12 @@ Home As screen:
                     Clear(BranchFolders);
                     Clear(BranchSolutionFolders);
                     If(
-                        Not IsBlank(drpImportDeploymentProfiles.Selected.Organization) And Not IsBlank(drpImportDeploymentProfiles.Selected.Project) And Not IsBlank(drpBranchName.Selected.name),
+                        Not IsBlank(drpImportDeploymentProfiles.Selected.'AzDO Organization') And Not IsBlank(drpImportDeploymentProfiles.Selected.'AzDO Project') And Not IsBlank(drpBranchName.Selected.name),
                         Collect(
                             BranchFolders,
                             CustomAzureDevOps.ListItems(
-                                drpImportDeploymentProfiles.Selected.Organization,
-                                drpImportDeploymentProfiles.Selected.Project,
+                                drpImportDeploymentProfiles.Selected.'AzDO Organization',
+                                drpImportDeploymentProfiles.Selected.'AzDO Project',
                                 drpImportDeploymentProfiles.Selected.Repository,
                                 {
                                     recursionLevel: "full",
@@ -5810,7 +5619,7 @@ Home As screen:
                     
                 );
                 If(
-                    !IsBlankOrError(drpImportDeploymentProfiles.Selected) And !IsBlankOrError(drpImportDeploymentProfiles.Selected.Organization) And !IsBlankOrError(drpImportDeploymentProfiles.Selected.Project),
+                    !IsBlankOrError(drpImportDeploymentProfiles.Selected) And !IsBlankOrError(drpImportDeploymentProfiles.Selected.'AzDO Organization') And !IsBlankOrError(drpImportDeploymentProfiles.Selected.'AzDO Project'),
                     Clear(BranchConfigFolders);
                     Collect(
                         BranchConfigFolders,
@@ -5843,7 +5652,7 @@ Home As screen:
                             !IsBlankOrError(r.'Build ID') And !IsBlankOrError(
                                 LookUp(
                                     ProfileBuilds,
-                                    Org = drpImportDeploymentProfiles.Selected.Organization And Project = drpImportDeploymentProfiles.Selected.Project
+                                    Org = drpImportDeploymentProfiles.Selected.'AzDO Organization' And Project = drpImportDeploymentProfiles.Selected.'AzDO Project'
                                 )
                             ),
                             Collect(
@@ -5853,7 +5662,7 @@ Home As screen:
                                     importSolutionStatus: LookUp(
                                         LookUp(
                                             ProfileBuilds,
-                                            Org = drpImportDeploymentProfiles.Selected.Organization And Project = drpImportDeploymentProfiles.Selected.Project
+                                            Org = drpImportDeploymentProfiles.Selected.'AzDO Organization' And Project = drpImportDeploymentProfiles.Selected.'AzDO Project'
                                         ).Builds,
                                         Text(id) = r.'Build ID'
                                     )
@@ -5957,7 +5766,6 @@ Home As screen:
                     DeploymentProfiles,
                     "cat_azdoorganization",
                     "cat_azdoproject",
-                    "cat_azdopipelineproject",
                     "group"
                 )
             );
@@ -5965,26 +5773,18 @@ Home As screen:
             ForAll(
                 Filter(
                     DistinctOrgProjectProfiles,
-                    !IsBlankOrError(cat_azdoorganization) And (!IsBlankOrError(cat_azdoproject) Or !IsBlankOrError(cat_azdopipelineproject))
+                    !IsBlankOrError(cat_azdoorganization) And !IsBlankOrError(cat_azdoproject)
                 ),
                 Collect(
                     ProfileBuilds,
                     {
                         Builds: CustomAzureDevOps.GetBuilds(
                             cat_azdoorganization,
-                            If(
-                                IsBlankOrError(cat_azdopipelineproject),
-                                cat_azdoproject,
-                                cat_azdopipelineproject
-                            ),
+                            cat_azdoproject,
                             {queryOrder: "queueTimeDescending"}
                         ).value,
                         Org: cat_azdoorganization,
-                        Project: If(
-                            IsBlankOrError(cat_azdopipelineproject),
-                            cat_azdoproject,
-                            cat_azdopipelineproject
-                        )
+                        Project: cat_azdoproject
                     }
                 )
             );
@@ -6011,11 +5811,7 @@ Home As screen:
                                 LookUp(
                                     LookUp(
                                         ProfileBuilds,
-                                        Org = locImportingSolutionProfile.Organization And Project = If(
-                                            IsBlankOrError(locImportingSolutionProfile.'Pipeline Project'),
-                                            locImportingSolutionProfile.Project,
-                                            locImportingSolutionProfile.'Pipeline Project'
-                                        )
+                                        Org = locImportingSolutionProfile.'AzDO Organization' And Project = locImportingSolutionProfile.'AzDO Project'
                                     ).Builds,
                                     Text(id) = locImportingSolutionBuildRequest.'Build ID'
                                 )
@@ -6048,11 +5844,7 @@ Home As screen:
                     LookUp(
                         LookUp(
                             ProfileBuilds,
-                            Org = dr.'Deployment Profile'.Organization And Project = If(
-                                IsBlankOrError(dr.'Deployment Profile'.'Pipeline Project'),
-                                dr.'Deployment Profile'.Project,
-                                dr.'Deployment Profile'.'Pipeline Project'
-                            )
+                            Org = dr.'Deployment Profile'.'AzDO Organization' And Project = dr.'Deployment Profile'.'AzDO Project'
                         ).Builds,
                         Text(id) = dr.'Build ID'
                     ).status = "completed",
@@ -6159,25 +5951,21 @@ Home As screen:
                     'Created On',
                     "BuildStatus",
                     If(
-                        !IsBlankOrError('Deployment Profile') And !IsBlankOrError('Deployment Profile'.Organization) And !IsBlankOrError('Deployment Profile'.Project) And !IsBlankOrError('Build ID') And ('Request Type' <> [@Type].Deploy Or IsBlankOrError(Source)),
+                        !IsBlankOrError('Deployment Profile') And !IsBlankOrError('Deployment Profile'.'AzDO Organization') And !IsBlankOrError('Deployment Profile'.'AzDO Project') And !IsBlankOrError('Build ID') And ('Request Type' <> [@Type].Deploy Or IsBlankOrError(Source)),
                         LookUp(
                             LookUp(
                                 ProfileBuilds,
-                                Org = 'Deployment Profile'.Organization And Project = If(
-                                    IsBlankOrError('Deployment Profile'.'Pipeline Project'),
-                                    'Deployment Profile'.Project,
-                                    'Deployment Profile'.'Pipeline Project'
-                                )
+                                Org = 'Deployment Profile'.'AzDO Organization' And Project = 'Deployment Profile'.'AzDO Project'
                             ).Builds,
                             Text(id) = 'Build ID'
                         );
                     ),
                     "PullRequestStatus",
                     If(
-                        !IsBlankOrError('Deployment Profile') And !IsBlankOrError('Deployment Profile'.Organization) And !IsBlankOrError('Deployment Profile'.Project) And !IsBlankOrError('Deployment Profile'.Repository) And !IsBlankOrError('Deployment Profile'.'Repository ID') And !IsBlankOrError('Build ID') And !IsBlankOrError(Source) And 'Request Type' = [@Type].Deploy,
+                        !IsBlankOrError('Deployment Profile') And !IsBlankOrError('Deployment Profile'.'AzDO Organization') And !IsBlankOrError('Deployment Profile'.'AzDO Project') And !IsBlankOrError('Deployment Profile'.Repository) And !IsBlankOrError('Deployment Profile'.'Repository ID') And !IsBlankOrError('Build ID') And !IsBlankOrError(Source) And 'Request Type' = [@Type].Deploy,
                         CustomAzureDevOps.GetPullReqeust(
-                            'Deployment Profile'.Organization,
-                            'Deployment Profile'.Project,
+                            'Deployment Profile'.'AzDO Organization',
+                            'Deployment Profile'.'AzDO Project',
                             'Deployment Profile'.'Repository ID',
                             'Build ID'
                         );
@@ -6337,14 +6125,10 @@ Home As screen:
             HoverColor: =ColorFade(icoManageSolutions.Color, 20%)
             HoverFill: =ColorFade(icoManageSolutions.Fill, 20%)
             Icon: =Icon.DetailList
-            OnSelect: |-
+            OnSelect: |
                 =If(
-                    !IsBlank(SelectedEnvironment) && !IsBlank(SelectedEnvironment.Url),
-                    If(
-                        (!IsBlank(Find("crm9.dynamics.com",SelectedEnvironment.Url)) Or !IsBlank(Find("crm.microsoftdynamics.us",SelectedEnvironment.Url))),
-                        Launch("https://make.gov.powerapps.us/environments/" & SelectedEnvironment.name & "/solutions"),
-                        Launch("https://make.powerapps.com/environments/" & SelectedEnvironment.name & "/solutions")
-                    );
+                    !IsBlank(SelectedEnvironment),
+                    Launch("https://make.powerapps.com/environments/" & SelectedEnvironment.name & "/solutions")
                 );
             PaddingBottom: =8
             PaddingLeft: =8

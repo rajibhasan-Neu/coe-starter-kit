@@ -1,8 +1,8 @@
 {
   "FormatVersion": "0.24",
   "Header": {
-    "DocVersion": "1.326",
-    "MinVersionToLoad": "1.326",
+    "DocVersion": "1.325",
+    "MinVersionToLoad": "1.325",
     "MSAppStructureVersion": "2.0"
   },
   "Properties": {
@@ -11,8 +11,6 @@
     "AppPreviewFlagsMap": {
       "aibuilderserviceenrollment": false,
       "allowmultiplescreensincanvaspages": false,
-      "appinsightserrortracing": false,
-      "appinstrumentationcorrelationtracing": false,
       "autocreateenvironmentvariables": false,
       "backfromhostaction": false,
       "behaviorpropertyui": true,
@@ -27,6 +25,7 @@
       "delayloadscreens": true,
       "disablecdsfileandlargeimage": false,
       "dynamicschema": false,
+      "enableaimodelsindatapane": false,
       "enableappembeddingux": false,
       "enablecomponentnamemaps": true,
       "enablecomponentscopeoldbehavior": true,
@@ -61,9 +60,9 @@
       "projectionmapping": true,
       "reactformulabar": false,
       "reliableconcurrent": true,
-      "reverttooldpowerautomate": false,
       "rtlinstudiopreview": false,
       "rtlsupport": false,
+      "searchtool": true,
       "usedisplaynamemetadata": true,
       "useenforcesavedatalimits": true,
       "useexperimentalcdsconnector": true,
@@ -85,7 +84,7 @@
     "DocumentType": "App",
     "EnableInstrumentation": false,
     "FileID": "44c84035-97ec-423f-a086-82cf386e0a0c",
-    "Id": "e5f8c8d0-86ec-46c5-be45-a62c02809419",
+    "Id": "f6c69f20-737d-4255-b733-fb35d1157ff0",
     "InstrumentationKey": "",
     "Name": "ALM Accelerator for Power Platform",
     "OriginatingVersion": "1.276"

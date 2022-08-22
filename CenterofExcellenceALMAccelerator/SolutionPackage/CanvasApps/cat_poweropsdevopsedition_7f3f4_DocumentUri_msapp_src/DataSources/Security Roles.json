@@ -76,10 +76,6 @@
       "OptionSetReferenceItem1": {
         "OptionSetReferenceColumnName": "componentstate",
         "OptionSetReferenceEntityName": "Canvas Apps"
-      },
-      "OptionSetReferenceItem2": {
-        "OptionSetReferenceColumnName": "componentstate",
-        "OptionSetReferenceEntityName": "Model-driven Apps"
       }
     },
     "OptionSetTypeKey": "PicklistType",
@@ -124,10 +120,6 @@
       "OptionSetReferenceItem1": {
         "OptionSetReferenceColumnName": "ismanaged",
         "OptionSetReferenceEntityName": "Canvas Apps"
-      },
-      "OptionSetReferenceItem2": {
-        "OptionSetReferenceColumnName": "ismanaged",
-        "OptionSetReferenceEntityName": "Model-driven Apps"
       }
     },
     "OptionSetTypeKey": "BooleanType",
